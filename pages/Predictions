@@ -1,33 +1,50 @@
 import streamlit as st
+import pickle
 import pandas as pd
-import matplotlib.pyplot as plt
 
-st.set_page_config(
-    page_title="Data Insights",
-    page_icon="📊"
+# Load model
+model = pickle.load(open("house_model.pkl", "rb"))
+le = pickle.load(open("location_encoder.pkl", "rb"))
+
+st.title("📊 House Price Prediction")
+
+# Inputs
+area = st.number_input(
+    "Area (sq ft)",
+    min_value=500,
+    max_value=5000,
+    value=1200
 )
 
-st.title("📊 Housing Data Insights")
+bedrooms = st.slider(
+    "Bedrooms",
+    1, 6, 2
+)
 
-# Sample dataset
-data = pd.DataFrame({
-    "Area": [1000, 1200, 1500, 1800, 2200],
-    "Price": [3000000, 4000000, 5000000, 6500000, 8000000]
-})
+bathrooms = st.slider(
+    "Bathrooms",
+    1, 5, 2
+)
 
-st.subheader("Dataset Preview")
-st.dataframe(data)
+location = st.selectbox(
+    "Location",
+    le.classes_
+)
 
-# Chart
-st.subheader("Area vs Price")
+# Predict
+if st.button("💰 Predict Price"):
 
-fig, ax = plt.subplots()
+    loc_encoded = le.transform([location])[0]
 
-ax.plot(data["Area"], data["Price"], marker='o')
+    input_data = pd.DataFrame(
+        [[area, bedrooms, bathrooms, loc_encoded]],
+        columns=['Area', 'Bedrooms', 'Bathrooms', 'Location']
+    )
 
-ax.set_xlabel("Area")
-ax.set_ylabel("Price")
+    prediction = model.predict(input_data)
 
-st.pyplot(fig)
+    st.success(
+        f"🏡 Estimated House Price: ₹ {int(prediction[0]):,}"
+    )
 
-st.info("Larger houses generally have higher prices.")
+    st.balloons()
